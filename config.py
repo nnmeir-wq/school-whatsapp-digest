@@ -3,7 +3,10 @@ import os
 
 from dotenv import load_dotenv
 
-load_dotenv()
+# utf-8-sig also strips a BOM if present - Notepad/PowerShell on Windows
+# often save .env with a UTF-8 BOM, which would otherwise corrupt the
+# first variable name.
+load_dotenv(encoding="utf-8-sig")
 
 ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
 GOOGLE_SERVICE_ACCOUNT_JSON = os.environ.get("GOOGLE_SERVICE_ACCOUNT_JSON", "")
