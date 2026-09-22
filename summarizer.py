@@ -22,6 +22,9 @@ SYSTEM_PROMPT = """\
 5. אם כמה הודעות עוסקות באותו נושא - אפשר לאחד אותן לנקודה אחת.
 6. אם לילד מסוים אין בפועל שום תוכן רלוונטי אחרי הסינון - כתוב עבורו נקודה \
 אחת: "אין עדכונים מהותיים היום".
+7. חובה: לכל קטע (### שם ילד) שקיבלת בקלט, המשך HTML הפלט חייב להכיל \
+כותרת <h2> תואמת. אסור בשום מקרה להשמיט קטע שלם - גם אם כל ההודעות בו \
+נראות לך לא חשובות, עדיין הוצא עבורו כותרת ונקודה יחידה לפי כלל 6.
 
 פורמט הפלט - חשוב מאוד:
 החזר אך ורק קטע HTML תקין (fragment), בלי גוף מסמך שלם ובלי ```html מסביב, \
@@ -75,4 +78,26 @@ def summarize(grouped: dict) -> str:
     html = "".join(
         block.text for block in response.content if block.type == "text"
     )
-    return _strip_code_fence(html)
+    html = _strip_code_fence(html)
+    return _ensure_all_children_present(html, grouped)
+
+
+def _escape_html(text: str) -> str:
+    return text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+
+
+def _ensure_all_children_present(html: str, grouped: dict) -> str:
+    """Safety net: these rows are about to be deleted from the sheet no
+    matter what Claude returned, so if it dropped a child/group section
+    entirely instead of following the system prompt, append its raw
+    messages here rather than silently losing that data."""
+    missing_sections = []
+    for child, messages in grouped.items():
+        if child not in html:
+            items = "".join(f"<li>{_escape_html(m)}</li>" for m in messages)
+            missing_sections.append(
+                f"<h2>{_escape_html(child)}</h2>\n<ul>{items}</ul>"
+            )
+    if missing_sections:
+        html = html + "\n" + "\n".join(missing_sections)
+    return html
