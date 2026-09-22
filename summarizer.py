@@ -86,13 +86,20 @@ def _escape_html(text: str) -> str:
     return text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
 
 
+UNMAPPED_GROUP_PREFIX = "קבוצה לא מזוהה: "
+
+
 def _ensure_all_children_present(html: str, grouped: dict) -> str:
-    """Safety net: these rows are about to be deleted from the sheet no
-    matter what Claude returned, so if it dropped a child/group section
-    entirely instead of following the system prompt, append its raw
-    messages here rather than silently losing that data."""
+    """Safety net for known children only: these rows are about to be
+    deleted from the sheet no matter what Claude returned, so if it
+    dropped a real child's section entirely instead of following the
+    system prompt, append their raw messages rather than silently losing
+    that data. Unmapped groups are exempt on purpose - Claude is free to
+    judge their content as irrelevant noise and drop them."""
     missing_sections = []
     for child, messages in grouped.items():
+        if child.startswith(UNMAPPED_GROUP_PREFIX):
+            continue
         if child not in html:
             items = "".join(f"<li>{_escape_html(m)}</li>" for m in messages)
             missing_sections.append(
