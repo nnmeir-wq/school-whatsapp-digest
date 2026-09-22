@@ -1,0 +1,30 @@
+name: Daily School Digest
+
+on:
+  schedule:
+    # 04:00 UTC = 07:00 Israel time (summer/DST).
+    # In winter (UTC+2) this fires at 06:00 local instead of 07:00 -
+    # a one-hour drift around the DST transitions, which is fine.
+    - cron: '0 4 * * *'
+  workflow_dispatch: {}
+
+jobs:
+  send-digest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - run: pip install -r requirements.txt
+
+      - run: python main.py
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
+          SPREADSHEET_ID: ${{ secrets.SPREADSHEET_ID }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
