@@ -2,10 +2,17 @@ name: Daily School Digest
 
 on:
   schedule:
-    # 04:00 UTC = 07:00 Israel time (summer/DST).
-    # In winter (UTC+2) this fires at 06:00 local instead of 07:00 -
-    # a one-hour drift around the DST transitions, which is fine.
-    - cron: '0 4 * * *'
+    # 23:17 UTC (previous day) = 02:17 Israel time (summer/DST).
+    # In winter (UTC+2) this fires at 01:17 local instead - a one-hour
+    # drift around the DST transitions, which is fine.
+    #
+    # Scheduled well before 07:00 on purpose: GitHub Actions "schedule"
+    # runs are best-effort and can be delayed by hours during high load
+    # (confirmed - a run meant for 04:00 UTC once fired at 09:07 UTC).
+    # A non-round minute avoids the top-of-the-hour congestion GitHub
+    # warns about, and the ~5-hour buffer before 07:00 absorbs most
+    # realistic delays.
+    - cron: '17 23 * * *'
   workflow_dispatch: {}
 
 jobs:
