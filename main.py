@@ -1,6 +1,6 @@
 import logging
 import sys
-from datetime import datetime
+from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
 import config
@@ -12,6 +12,17 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(mess
 logger = logging.getLogger(__name__)
 
 ISRAEL_TZ = ZoneInfo("Asia/Jerusalem")
+
+
+def digest_date_label(now: datetime) -> str:
+    """The run is scheduled for 23:07 Israel time, covering messages up
+    to that night. A legitimate on-time run only ever executes in the
+    23:00-23:59 hour; if it's running at any other local hour, GitHub's
+    scheduler delayed it past midnight, so the messages it's reading
+    still belong to the PREVIOUS calendar day, not the day it happens
+    to execute on."""
+    target = now if now.hour == 23 else now - timedelta(days=1)
+    return target.strftime("%d/%m/%Y")
 
 
 def group_by_child(rows):
@@ -28,7 +39,7 @@ def group_by_child(rows):
 
 
 def main():
-    date_label = datetime.now(ISRAEL_TZ).strftime("%d/%m/%Y")
+    date_label = digest_date_label(datetime.now(ISRAEL_TZ))
 
     try:
         rows, first_row, last_row = sheets_client.read_rows()

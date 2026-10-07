@@ -2,15 +2,21 @@ name: Daily School Digest
 
 on:
   schedule:
-    # 03:25 UTC = 06:25 Israel time (summer/DST).
-    # In winter (UTC+2) this fires at 05:25 local instead - a one-hour
-    # drift around the DST transitions, which is fine.
+    # 23:07 Israel time, every night. The explicit timezone field (GitHub
+    # Actions, since March 2026) handles the UTC conversion and DST
+    # transitions automatically - no manual UTC math or duplicate cron
+    # lines needed.
     #
     # NOTE: GitHub Actions "schedule" runs are best-effort and can be
-    # delayed by hours during high load (confirmed - a run meant for
-    # 04:00 UTC once fired at 09:07 UTC). This only leaves a ~35-minute
-    # buffer before 07:00, so a repeat of that delay would miss it.
-    - cron: '25 3 * * *'
+    # delayed significantly during high load - confirmed in practice:
+    # every scheduled run over the last two weeks fired 5-7+ hours late
+    # (and the delay has been trending upward, not just occasional). At
+    # 23:07 that leaves under 7 hours of buffer before 06:00, which may
+    # not be enough on a bad day. If the digest keeps arriving after
+    # 06:00, the only fully reliable fix is moving off GitHub Actions
+    # scheduling entirely (see the local-cron alternative in the README).
+    - cron: '7 23 * * *'
+      timezone: 'Asia/Jerusalem'
   workflow_dispatch: {}
 
 jobs:
